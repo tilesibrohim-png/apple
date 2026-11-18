@@ -1,0 +1,1893 @@
+    <!DOCTYPE html>
+    <html lang="uz" class="scroll-smooth">
+    
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Apple Studio — Fotorealistik 3D Ekotizim & Rasmiy Buyurtma</title>
+    
+        <!-- Tailwind CSS -->
+        <script src="https://cdn.tailwindcss.com"></script>
+    
+        <!-- Google Fonts: Inter (SF Pro uslubiga eng yaqin shrift) -->
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+            rel="stylesheet">
+    
+        <!-- FontAwesome Icons -->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+        <!-- Three.js va OrbitControls (r128) -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    
+        <script>
+            tailwind.config = {
+                theme: {
+                    extend: {
+                        fontFamily: {
+                            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+                        },
+                        colors: {
+                            apple: {
+                                black: '#000000',
+                                dark: '#0A0A0C',
+                                card: '#141416',
+                                border: '#27272A',
+                                gray: '#86868B',
+                                silver: '#D2D2D7',
+                                light: '#F5F5F7',
+                            }
+                        }
+                    }
+                }
+            }
+        </script>
+    
+        <style>
+            * {
+                box-sizing: border-box;
+                -webkit-font-smoothing: antialiased;
+                -moz-osx-font-smoothing: grayscale;
+            }
+    
+            body {
+                background-color: #000000;
+                color: #F5F5F7;
+                overflow-x: hidden;
+                font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            }
+    
+            /* Maxsus shaffof oyna (Apple Glassmorphism) effekti */
+            .apple-glass {
+                background: rgba(20, 20, 22, 0.72);
+                backdrop-filter: blur(24px);
+                -webkit-backdrop-filter: blur(24px);
+                border: 1px solid rgba(255, 255, 255, 0.09);
+            }
+    
+            .apple-glass-light {
+                background: rgba(255, 255, 255, 0.04);
+                backdrop-filter: blur(16px);
+                -webkit-backdrop-filter: blur(16px);
+                border: 1px solid rgba(255, 255, 255, 0.08);
+            }
+    
+            /* Metallik matn gradienti */
+            .silver-gradient-text {
+                background: linear-gradient(180deg, #FFFFFF 0%, #A1A1A6 100%);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+            }
+    
+            .subtle-grid-bg {
+                background-image:
+                    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+                background-size: 64px 64px;
+            }
+    
+            /* Skroll animatsiyasi klasslari */
+            .reveal-up {
+                opacity: 0;
+                transform: translateY(36px);
+                transition: opacity 0.85s cubic-bezier(0.16, 1, 0.3, 1), transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
+            }
+    
+            .reveal-up.active {
+                opacity: 1;
+                transform: translateY(0);
+            }
+    
+            /* Maxsus Rang Tanlagich (Color Picker) */
+            input[type="color"] {
+                -webkit-appearance: none;
+                border: none;
+                width: 36px;
+                height: 36px;
+                border-radius: 9999px;
+                cursor: pointer;
+                background: transparent;
+                padding: 0;
+            }
+    
+            input[type="color"]::-webkit-color-swatch-wrapper {
+                padding: 0;
+            }
+    
+            input[type="color"]::-webkit-color-swatch {
+                border: 2px solid rgba(255, 255, 255, 0.4);
+                border-radius: 9999px;
+            }
+    
+            /* 3D Canvas Konteyneri */
+            #hero-3d-wrapper {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                z-index: 0;
+                pointer-events: auto;
+            }
+    
+            #hero-3d-canvas {
+                width: 100%;
+                height: 100%;
+                display: block;
+                cursor: grab;
+            }
+    
+            #hero-3d-canvas:active {
+                cursor: grabbing;
+            }
+    
+            /* Custom Scrollbar */
+            ::-webkit-scrollbar {
+                width: 8px;
+            }
+    
+            ::-webkit-scrollbar-track {
+                background: #000000;
+            }
+    
+            ::-webkit-scrollbar-thumb {
+                background: #2C2C2E;
+                border-radius: 4px;
+            }
+    
+            ::-webkit-scrollbar-thumb:hover {
+                background: #48484A;
+            }
+        </style>
+    </head>
+    
+    <body class="selection:bg-white selection:text-black">
+    
+        <!-- ===================================================================== -->
+        <!-- RUXSAT ETILGAN TO'LIQ EKRANLI FOTOREALISTIK 3D SAHNA (ORQA FON MACBOOK) -->
+        <!-- ===================================================================== -->
+        <div id="hero-3d-wrapper">
+            <canvas id="hero-3d-canvas"></canvas>
+            <!-- Pastki va yuqori qorong'u gradient o'tishlari (matn o'qilishini mukammallashtirish uchun) -->
+            <div class="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/70 via-transparent to-black"></div>
+        </div>
+    
+        <!-- ===================================================================== -->
+        <!-- YUQORI NAVIGATSIYA PANELI (GLASSMORPHISM)                              -->
+        <!-- ===================================================================== -->
+        <header class="fixed top-0 left-0 right-0 z-40 transition-all duration-300 border-b border-white/5 apple-glass">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+                <!-- Apple Logo va Brend -->
+                <a href="#home" class="flex items-center space-x-3 group">
+                    <div
+                        class="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center border border-white/15 group-hover:bg-white group-hover:text-black transition-all duration-300">
+                        <i class="fa-brands fa-apple text-lg"></i>
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="font-semibold tracking-tight text-sm sm:text-base text-white">Apple Studio</span>
+                        <span class="text-[10px] uppercase tracking-widest text-apple-gray">Uzbekistan Edition</span>
+                    </div>
+                </a>
+    
+                <!-- Desktop Menyu -->
+                <nav class="hidden md:flex items-center space-x-8 text-xs font-medium tracking-wide text-apple-silver">
+                    <a href="#home" class="hover:text-white transition-colors">3D Studiya</a>
+                    <a href="#products" class="hover:text-white transition-colors">Mahsulotlar</a>
+                    <a href="#about" class="hover:text-white transition-colors">Texnologiya</a>
+                    <a href="#order" class="hover:text-white transition-colors">Buyurtma va Aloqa</a>
+                </nav>
+    
+                <!-- O'ng taraf tugmalari -->
+                <div class="flex items-center space-x-3">
+                    <button onclick="openBotSettingsModal()" title="Telegram Bot Sozlamalari"
+                        class="p-2.5 rounded-full bg-white/5 hover:bg-white/15 border border-white/10 text-apple-silver hover:text-white transition-all text-xs flex items-center gap-2">
+                        <i class="fa-brands fa-telegram text-sm"></i>
+                        <span class="hidden sm:inline">Bot Sozlamasi</span>
+                    </button>
+                    <a href="#order"
+                        class="px-4 py-2 rounded-full bg-white text-black font-semibold text-xs hover:bg-apple-silver transition-all shadow-lg shadow-white/10">
+                        Buyurtma berish
+                    </a>
+                </div>
+            </div>
+        </header>
+    
+        <!-- ===================================================================== -->
+        <!-- 1-BO'LIM: BOSH SAHIFA & INTERAKTIV 3D GADJET STUDIYASI                 -->
+        <!-- ===================================================================== -->
+        <section id="home"
+            class="relative z-10 min-h-screen flex flex-col justify-between pt-24 pb-10 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto pointer-events-none">
+    
+            <!-- Yuqori Sarlavha Qismi -->
+            <div class="text-center max-w-3xl mx-auto mt-4 sm:mt-8 pointer-events-auto">
+                <div
+                    class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full apple-glass-light text-[11px] font-medium tracking-wider uppercase text-apple-silver mb-5">
+                    <span class="w-2 h-2 rounded-full bg-white animate-pulse"></span>
+                    <span>Real-Vaqt PBR Metallik 3D Dvigatel</span>
+                </div>
+    
+                <h1 id="hero-device-title"
+                    class="text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight silver-gradient-text leading-[1.08] mb-4">
+                    MacBook Pro 16"
+                </h1>
+    
+                <p id="hero-device-subtitle"
+                    class="text-sm sm:text-lg text-apple-gray max-w-xl mx-auto font-normal leading-relaxed">
+                    Anodlangan alyuminiy korpus, Liquid Retina XDR displey va M4 Max arxitekturasi. Sichqoncha yoki barmoq
+                    bilan 360° aylantiring va istalgan rangni sinab ko'ring.
+                </p>
+            </div>
+    
+            <!-- O'rta Bo'shliq (Orqa fondagi 3D MacBook/Gadjet ko'rinishi uchun) -->
+            <div class="flex-1 min-h-[260px] sm:min-h-[340px] flex items-center justify-between pointer-events-none">
+                <!-- Chap tarafdagi texnik ko'rsatkich -->
+                <div class="hidden lg:flex flex-col gap-4 pointer-events-auto apple-glass p-5 rounded-3xl w-60">
+                    <div class="text-[11px] uppercase tracking-widest text-apple-gray">Material & Qoplama</div>
+                    <div class="flex items-center justify-between border-b border-white/10 pb-2.5">
+                        <span class="text-xs text-apple-silver">Korpus</span>
+                        <span id="spec-chassis" class="text-xs font-semibold text-white">100% Alyuminiy</span>
+                    </div>
+                    <div class="flex items-center justify-between border-b border-white/10 pb-2.5">
+                        <span class="text-xs text-apple-silver">Rang kodi</span>
+                        <span id="spec-hex" class="text-xs font-mono text-white">#2E2E32</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs text-apple-silver">Yorug'lik</span>
+                        <span class="text-xs font-semibold text-white">Studio HDR</span>
+                    </div>
+                </div>
+    
+                <!-- O'ng tarafdagi tezkor harakat -->
+                <div class="hidden lg:flex flex-col gap-3 pointer-events-auto apple-glass p-5 rounded-3xl w-60">
+                    <div class="text-[11px] uppercase tracking-widest text-apple-gray">Interaktiv Boshqaruv</div>
+                    <p class="text-xs text-apple-silver leading-relaxed">
+                        <i class="fa-solid fa-computer-mouse mr-1.5 text-white"></i> Aylantirish: Bosib suring
+                    </p>
+                    <p class="text-xs text-apple-silver leading-relaxed">
+                        <i class="fa-solid fa-magnifying-glass-plus mr-1.5 text-white"></i> Yaqinlashtirish: G'ildirak
+                    </p>
+                    <button onclick="resetCameraView()"
+                        class="mt-1 w-full py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-medium text-white transition-all">
+                        <i class="fa-solid fa-rotate-right mr-1"></i> Kamerani tiklash
+                    </button>
+                </div>
+            </div>
+    
+            <!-- Pastki 3D Boshqaruv Paneli (Barcha Apple Gadjetlari + Cheksiz Rang Tanlash) -->
+            <div class="pointer-events-auto w-full max-w-5xl mx-auto apple-glass rounded-3xl p-4 sm:p-5 shadow-2xl">
+                <div class="flex flex-col lg:flex-row items-center justify-between gap-4">
+    
+                    <!-- 1. Gadjetlarni almashtirish tugmalari -->
+                    <div class="w-full lg:w-auto overflow-x-auto pb-1 lg:pb-0">
+                        <div class="flex items-center justify-start sm:justify-center gap-2 min-w-max">
+                            <button onclick="switch3DDevice('macbook')" data-device="macbook"
+                                class="device-btn active px-4 py-2.5 rounded-2xl text-xs font-medium transition-all flex items-center gap-2 bg-white text-black shadow-md">
+                                <i class="fa-solid fa-laptop"></i>
+                                <span>MacBook Pro</span>
+                            </button>
+                            <button onclick="switch3DDevice('iphone')" data-device="iphone"
+                                class="device-btn px-4 py-2.5 rounded-2xl text-xs font-medium transition-all flex items-center gap-2 bg-white/5 text-apple-silver hover:bg-white/15 hover:text-white">
+                                <i class="fa-solid fa-mobile-screen"></i>
+                                <span>iPhone 16 Pro</span>
+                            </button>
+                            <button onclick="switch3DDevice('ipad')" data-device="ipad"
+                                class="device-btn px-4 py-2.5 rounded-2xl text-xs font-medium transition-all flex items-center gap-2 bg-white/5 text-apple-silver hover:bg-white/15 hover:text-white">
+                                <i class="fa-solid fa-tablet-screen-button"></i>
+                                <span>iPad Pro M4</span>
+                            </button>
+                            <button onclick="switch3DDevice('watch')" data-device="watch"
+                                class="device-btn px-4 py-2.5 rounded-2xl text-xs font-medium transition-all flex items-center gap-2 bg-white/5 text-apple-silver hover:bg-white/15 hover:text-white">
+                                <i class="fa-regular fa-clock"></i>
+                                <span>Watch Ultra 2</span>
+                            </button>
+                            <button onclick="switch3DDevice('airpods')" data-device="airpods"
+                                class="device-btn px-4 py-2.5 rounded-2xl text-xs font-medium transition-all flex items-center gap-2 bg-white/5 text-apple-silver hover:bg-white/15 hover:text-white">
+                                <i class="fa-solid fa-headphones"></i>
+                                <span>AirPods Max</span>
+                            </button>
+                        </div>
+                    </div>
+    
+                    <!-- 2. Cheksiz Rang O'zgartirish Paneli -->
+                    <div
+                        class="flex flex-wrap items-center justify-center gap-3 border-t lg:border-t-0 lg:border-l border-white/10 pt-3 lg:pt-0 lg:pl-5 w-full lg:w-auto">
+                        <span class="text-[11px] uppercase tracking-wider text-apple-gray mr-1">Rang:</span>
+    
+                        <!-- Tayyor Apple Metallik Ranglari -->
+                        <button onclick="setDeviceColor('#1d1d20', 'Space Black')" title="Space Black"
+                            class="w-7 h-7 rounded-full bg-[#1d1d20] border-2 border-white/60 hover:scale-110 transition-transform"></button>
+                        <button onclick="setDeviceColor('#8e8d8a', 'Natural Titanium')" title="Natural Titanium"
+                            class="w-7 h-7 rounded-full bg-[#8e8d8a] border border-white/30 hover:scale-110 transition-transform"></button>
+                        <button onclick="setDeviceColor('#e3e4e6', 'Pure Silver')" title="Pure Silver"
+                            class="w-7 h-7 rounded-full bg-[#e3e4e6] border border-white/30 hover:scale-110 transition-transform"></button>
+                        <button onclick="setDeviceColor('#4a4a4f', 'Graphite Gray')" title="Graphite Gray"
+                            class="w-7 h-7 rounded-full bg-[#4a4a4f] border border-white/30 hover:scale-110 transition-transform"></button>
+                        <button onclick="setDeviceColor('#d4c9b9', 'Desert Titanium')" title="Desert Titanium"
+                            class="w-7 h-7 rounded-full bg-[#d4c9b9] border border-white/30 hover:scale-110 transition-transform"></button>
+    
+                        <!-- Cheksiz Maxsus Rang Tanlash (HTML5 Color Picker) -->
+                        <div class="flex items-center gap-2 pl-2 border-l border-white/15">
+                            <label for="custom-3d-color"
+                                class="text-[11px] text-apple-silver cursor-pointer hover:text-white">Maxsus:</label>
+                            <input type="color" id="custom-3d-color" value="#2e2e32"
+                                oninput="setDeviceColor(this.value, 'Maxsus Rang')" title="Istalgan rangni tanlang">
+                        </div>
+                    </div>
+    
+                </div>
+            </div>
+        </section>
+    
+        <!-- ===================================================================== -->
+        <!-- ASOSIY KONTENT QATLAMI (QORA VA KULRANG MINIMALIST DIZAYN)             -->
+        <!-- ===================================================================== -->
+        <main class="relative z-20 bg-gradient-to-b from-black/95 via-black to-black">
+    
+            <!-- ================================================================= -->
+            <!-- 2-BO'LIM: APPLE MAHSULOTLARI KATALOGI (KARTALAR + BATAFSIL MODAL)  -->
+            <!-- ================================================================= -->
+            <section id="products" class="py-24 sm:py-32 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+                <div class="reveal-up flex flex-col md:flex-row md:items-end justify-between mb-16 gap-6">
+                    <div>
+                        <span class="text-xs font-semibold uppercase tracking-widest text-apple-gray block mb-3">Ekotizim
+                            Katalogi</span>
+                        <h2 class="text-3xl sm:text-5xl font-bold tracking-tight silver-gradient-text">
+                            Apple Mahsulotlari.
+                        </h2>
+                    </div>
+                    <p class="text-sm sm:text-base text-apple-gray max-w-md">
+                        Har bir qurilmani 3D studiyada ko'zdan kechiring yoki texnik xususiyatlar bilan batafsil tanishib,
+                        to'g'ridan-to'g'ri buyurtma bering.
+                    </p>
+                </div>
+    
+                <!-- Mahsulotlar Gridi -->
+                <div id="products-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+                    <!-- JavaScript orqali dinamik ravishda to'ldiriladi -->
+                </div>
+            </section>
+    
+            <!-- ================================================================= -->
+            <!-- 3-BO'LIM: APPLE TEXNOLOGIYASI VA MUHANDISLIGI HAQIDA MA'LUMOT     -->
+            <!-- ================================================================= -->
+            <section id="about" class="py-24 sm:py-32 border-t border-white/10 subtle-grid-bg">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="reveal-up max-w-3xl mb-16">
+                        <span class="text-xs font-semibold uppercase tracking-widest text-apple-gray block mb-3">Muhandislik
+                            Falsafasi</span>
+                        <h2 class="text-3xl sm:text-5xl font-bold tracking-tight text-white leading-tight mb-6">
+                            Mukammallik — har bir millimetr va kremniy kristalida.
+                        </h2>
+                        <p class="text-base sm:text-lg text-apple-gray leading-relaxed">
+                            Apple apparat va dasturiy ta'minotni yagona yaxlit tizim sifatida loyihalaydi. Aerokosmik
+                            darajadagi 5-sinf titan, 100% qayta ishlangan anodlangan alyuminiy va Apple Silicon M4 / A18 Pro
+                            chiplari misli ko'rilmagan unumdorlikni ta'minlaydi.
+                        </p>
+                    </div>
+    
+                    <!-- 3 Ustunli Texnik Afzalliklar -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
+                        <div class="reveal-up apple-glass p-8 rounded-3xl flex flex-col justify-between">
+                            <div>
+                                <div
+                                    class="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center mb-6 border border-white/15">
+                                    <i class="fa-solid fa-microchip text-xl text-white"></i>
+                                </div>
+                                <h3 class="text-xl font-semibold text-white mb-3">Apple Silicon Arxitekturasi</h3>
+                                <p class="text-sm text-apple-gray leading-relaxed">
+                                    3 nanometrli ikkinchi avlod texnologiyasi asosida yaratilgan M4 Max va A18 Pro
+                                    protsessorlari soniyasiga 38 trillion neyron operatsiyalarni bajaradi va batareya
+                                    quvvatini maksimal tejaydi.
+                                </p>
+                            </div>
+                            <div class="mt-8 pt-6 border-t border-white/10 flex items-baseline justify-between">
+                                <span class="text-3xl font-bold text-white">3 nm</span>
+                                <span class="text-xs text-apple-gray uppercase tracking-wider">SoC Texnologiyasi</span>
+                            </div>
+                        </div>
+    
+                        <div class="reveal-up apple-glass p-8 rounded-3xl flex flex-col justify-between"
+                            style="transition-delay: 120ms;">
+                            <div>
+                                <div
+                                    class="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center mb-6 border border-white/15">
+                                    <i class="fa-solid fa-layer-group text-xl text-white"></i>
+                                </div>
+                                <h3 class="text-xl font-semibold text-white mb-3">Titan va Unibody Alyuminiy</h3>
+                                <p class="text-sm text-apple-gray leading-relaxed">
+                                    Har bir korpus yaxlit metall blokdan yuqori aniqlikdagi CNC dastgohlarda kesib olinadi.
+                                    Mikro-qumlash (micro-blasting) ishlovi tufayli sirtda barmoq izlari qolmaydi va
+                                    hashamatli jilo saqlanadi.
+                                </p>
+                            </div>
+                            <div class="mt-8 pt-6 border-t border-white/10 flex items-baseline justify-between">
+                                <span class="text-3xl font-bold text-white">Grade 5</span>
+                                <span class="text-xs text-apple-gray uppercase tracking-wider">Aerokosmik Titan</span>
+                            </div>
+                        </div>
+    
+                        <div class="reveal-up apple-glass p-8 rounded-3xl flex flex-col justify-between"
+                            style="transition-delay: 240ms;">
+                            <div>
+                                <div
+                                    class="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center mb-6 border border-white/15">
+                                    <i class="fa-solid fa-infinity text-xl text-white"></i>
+                                </div>
+                                <h3 class="text-xl font-semibold text-white mb-3">Yagona Ekotizim Sinxronizatsiyasi</h3>
+                                <p class="text-sm text-apple-gray leading-relaxed">
+                                    iPhone-da nusxalangan matnni bir soniyada MacBook-ga joylashtiring, AirPods Max-ni
+                                    qurilmalar o'rtasida avtomatik ulang va iPad-ni ikkinchi simsiz monitor sifatida
+                                    ishlating.
+                                </p>
+                            </div>
+                            <div class="mt-8 pt-6 border-t border-white/10 flex items-baseline justify-between">
+                                <span class="text-3xl font-bold text-white">100%</span>
+                                <span class="text-xs text-apple-gray uppercase tracking-wider">Uzluksiz Integratsiya</span>
+                            </div>
+                        </div>
+                    </div>
+    
+                    <!-- Pastki Katta Texnik Banner -->
+                    <div
+                        class="reveal-up apple-glass rounded-3xl p-8 sm:p-12 border border-white/10 flex flex-col lg:flex-row items-center justify-between gap-8">
+                        <div class="max-w-xl">
+                            <span class="text-xs font-semibold uppercase tracking-widest text-apple-gray block mb-2">Liquid
+                                Retina XDR & Tandem OLED</span>
+                            <h3 class="text-2xl sm:text-3xl font-bold text-white mb-4">Haqiqiy qora rang va 1600 nit
+                                yorqinlik.</h3>
+                            <p class="text-sm text-apple-gray leading-relaxed">
+                                Har bir piksel mustaqil boshqariladigan ProMotion (120Hz) displeylar ranglarni studiya
+                                aniqligida (P3 keng rang gamuti) aks ettiradi. Dizaynerlar, dasturchilar va kinoijodkorlar
+                                uchun mutlaq standart.
+                            </p>
+                        </div>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-6 w-full lg:w-auto text-center">
+                            <div class="p-4 rounded-2xl bg-white/5 border border-white/10">
+                                <div class="text-2xl sm:text-3xl font-bold text-white">120 Hz</div>
+                                <div class="text-[11px] text-apple-gray mt-1">ProMotion</div>
+                            </div>
+                            <div class="p-4 rounded-2xl bg-white/5 border border-white/10">
+                                <div class="text-2xl sm:text-3xl font-bold text-white">22 soat</div>
+                                <div class="text-[11px] text-apple-gray mt-1">Avtonom ishlash</div>
+                            </div>
+                            <div class="p-4 rounded-2xl bg-white/5 border border-white/10 col-span-2 sm:col-span-1">
+                                <div class="text-2xl sm:text-3xl font-bold text-white">1,000,000:1</div>
+                                <div class="text-[11px] text-apple-gray mt-1">Kontrast nisbati</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+    
+            <!-- ================================================================= -->
+            <!-- 4-BO'LIM: BOG'LANISH VA BUYURTMA TOPSHIRISH (TELEGRAM BOT ORQALI)  -->
+            <!-- ================================================================= -->
+            <section id="order" class="py-24 sm:py-32 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-t border-white/10">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
+    
+                    <!-- Chap ustun: Aloqa ma'lumotlari va Telegram Bot holati -->
+                    <div class="reveal-up lg:col-span-5 space-y-8">
+                        <div>
+                            <span class="text-xs font-semibold uppercase tracking-widest text-apple-gray block mb-3">Rasmiy
+                                Buyurtma Markazi</span>
+                            <h2 class="text-3xl sm:text-5xl font-bold tracking-tight silver-gradient-text mb-4">
+                                Ariza va Buyurtma.
+                            </h2>
+                            <p class="text-sm sm:text-base text-apple-gray leading-relaxed">
+                                O'zingizga yoqqan Apple qurilmasi va 3D studiyada tanlangan maxsus rangni buyurtma qiling.
+                                Arizangiz darhol bizning Telegram botimizga yetkaziladi va mutaxassislarimiz 10 daqiqa
+                                ichida bog'lanadi.
+                            </p>
+                        </div>
+    
+                        <!-- Aloqa Kartalari -->
+                        <div class="space-y-4">
+                            <div class="apple-glass p-5 rounded-2xl flex items-center gap-4">
+                                <div class="w-11 h-11 rounded-full bg-white/10 flex items-center justify-center shrink-0">
+                                    <i class="fa-solid fa-location-dot text-white"></i>
+                                </div>
+                                <div>
+                                    <div class="text-xs text-apple-gray">Showroom Manzili</div>
+                                    <div class="text-sm font-medium text-white">Toshkent sh., Amir Temur shoh ko'chasi, 107B
+                                    </div>
+                                </div>
+                            </div>
+    
+                            <div class="apple-glass p-5 rounded-2xl flex items-center gap-4">
+                                <div class="w-11 h-11 rounded-full bg-white/10 flex items-center justify-center shrink-0">
+                                    <i class="fa-solid fa-phone text-white"></i>
+                                </div>
+                                <div>
+                                    <div class="text-xs text-apple-gray">Qo'llab-quvvatlash markazi (24/7)</div>
+                                    <div class="text-sm font-medium text-white">+998 (71) 200-00-01</div>
+                                </div>
+                            </div>
+    
+                            <!-- Telegram Bot Status Indikatori -->
+                            <div class="apple-glass p-5 rounded-2xl border border-white/15">
+                                <div class="flex items-center justify-between mb-2">
+                                    <div class="flex items-center gap-2">
+                                        <i class="fa-brands fa-telegram text-lg text-white"></i>
+                                        <span class="text-sm font-semibold text-white">Telegram Bot Integratsiyasi</span>
+                                    </div>
+                                    <span id="bot-status-badge"
+                                        class="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-white/10 text-apple-silver">
+                                        Sozlanmagan
+                                    </span>
+                                </div>
+                                <p class="text-xs text-apple-gray leading-relaxed mb-3">
+                                    Buyurtmalar to'g'ridan-to'g'ri Telegram botingizga kelishi uchun Bot Token va Chat ID
+                                    kiriting.
+                                </p>
+                                <button onclick="openBotSettingsModal()"
+                                    class="text-xs font-medium text-white underline underline-offset-4 hover:text-apple-silver transition-colors">
+                                    Bot Token va Chat ID ni sozlash →
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+    
+                    <!-- O'ng ustun: Buyurtma Formasi -->
+                    <div class="reveal-up lg:col-span-7 apple-glass p-6 sm:p-10 rounded-3xl shadow-2xl">
+                        <form id="apple-order-form" onsubmit="handleOrderSubmit(event)" class="space-y-6">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                <!-- Ism Familiya -->
+                                <div>
+                                    <label for="customer-name" class="block text-xs font-medium text-apple-silver mb-2">Ism
+                                        va Familiyangiz *</label>
+                                    <input type="text" id="customer-name" required placeholder="Masalan: Sardor Karimov"
+                                        class="w-full px-4 py-3.5 rounded-2xl bg-black/60 border border-white/15 text-sm text-white placeholder-apple-gray/60 focus:outline-none focus:border-white transition-colors">
+                                </div>
+    
+                                <!-- Telefon raqam -->
+                                <div>
+                                    <label for="customer-phone"
+                                        class="block text-xs font-medium text-apple-silver mb-2">Telefon raqamingiz
+                                        *</label>
+                                    <input type="tel" id="customer-phone" required placeholder="+998 90 123 45 67"
+                                        class="w-full px-4 py-3.5 rounded-2xl bg-black/60 border border-white/15 text-sm text-white placeholder-apple-gray/60 focus:outline-none focus:border-white transition-colors">
+                                </div>
+                            </div>
+    
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                <!-- Telegram Username -->
+                                <div>
+                                    <label for="customer-telegram"
+                                        class="block text-xs font-medium text-apple-silver mb-2">Telegram Username</label>
+                                    <input type="text" id="customer-telegram" placeholder="@username"
+                                        class="w-full px-4 py-3.5 rounded-2xl bg-black/60 border border-white/15 text-sm text-white placeholder-apple-gray/60 focus:outline-none focus:border-white transition-colors">
+                                </div>
+    
+                                <!-- Mahsulot tanlash -->
+                                <div>
+                                    <label for="order-product"
+                                        class="block text-xs font-medium text-apple-silver mb-2">Apple Mahsuloti *</label>
+                                    <select id="order-product" required
+                                        class="w-full px-4 py-3.5 rounded-2xl bg-black/80 border border-white/15 text-sm text-white focus:outline-none focus:border-white transition-colors">
+                                        <option value="MacBook Pro 16&quot; M4 Max">MacBook Pro 16" M4 Max — $3,499</option>
+                                        <option value="iPhone 16 Pro Max">iPhone 16 Pro Max (1TB) — $1,599</option>
+                                        <option value="iPad Pro 13&quot; M4">iPad Pro 13" M4 OLED — $1,299</option>
+                                        <option value="Apple Watch Ultra 2">Apple Watch Ultra 2 — $799</option>
+                                        <option value="AirPods Max USB-C">AirPods Max USB-C — $549</option>
+                                        <option value="Apple Vision Pro">Apple Vision Pro — $3,499</option>
+                                    </select>
+                                </div>
+                            </div>
+    
+                            <!-- 3D Studiyadan olingan rang ko'rsatkichi -->
+                            <div>
+                                <label for="order-color" class="block text-xs font-medium text-apple-silver mb-2">Tanlangan
+                                    Korpus Rangi (3D Studiya bilan sinxron)</label>
+                                <div class="flex items-center gap-3">
+                                    <span id="form-color-preview"
+                                        class="w-10 h-10 rounded-xl border border-white/30 shrink-0"
+                                        style="background-color: #2e2e32;"></span>
+                                    <input type="text" id="order-color" value="Space Black (#2E2E32)"
+                                        class="w-full px-4 py-3 rounded-2xl bg-black/60 border border-white/15 text-sm text-white focus:outline-none focus:border-white transition-colors">
+                                </div>
+                            </div>
+    
+                            <!-- Qo'shimcha izoh -->
+                            <div>
+                                <label for="order-notes" class="block text-xs font-medium text-apple-silver mb-2">Qo'shimcha
+                                    izoh yoki yetkazib berish manzili</label>
+                                <textarea id="order-notes" rows="3"
+                                    placeholder="Xotira hajmi, yetkazib berish vaqti yoki savollaringizni yozing..."
+                                    class="w-full px-4 py-3.5 rounded-2xl bg-black/60 border border-white/15 text-sm text-white placeholder-apple-gray/60 focus:outline-none focus:border-white transition-colors resize-none"></textarea>
+                            </div>
+    
+                            <!-- Yuborish tugmasi -->
+                            <button type="submit" id="submit-order-btn"
+                                class="w-full py-4 rounded-2xl bg-white text-black font-semibold text-sm hover:bg-apple-silver transition-all flex items-center justify-center gap-2 shadow-xl shadow-white/10">
+                                <i class="fa-brands fa-telegram text-lg"></i>
+                                <span>Buyurtmani Telegram Botga Yuborish</span>
+                            </button>
+                        </form>
+    
+                        <!-- Buyurtma Natijasi / Xabarnoma Qutisi -->
+                        <div id="order-feedback" class="hidden mt-6 p-5 rounded-2xl border"></div>
+                    </div>
+                </div>
+            </section>
+    
+            <!-- ================================================================= -->
+            <!-- FOOTER                                                            -->
+            <!-- ================================================================= -->
+            <footer class="border-t border-white/10 py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto text-xs text-apple-gray">
+                <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-brands fa-apple text-base text-white"></i>
+                        <span>© 2026 Apple Studio Uzbekistan. Barcha huquqlar himoyalangan.</span>
+                    </div>
+                    <div class="flex items-center gap-6">
+                        <a href="#home" class="hover:text-white transition-colors">3D Studiya</a>
+                        <a href="#products" class="hover:text-white transition-colors">Katalog</a>
+                        <a href="#about" class="hover:text-white transition-colors">Texnologiya</a>
+                        <a href="#order" class="hover:text-white transition-colors">Aloqa</a>
+                    </div>
+                </div>
+            </footer>
+        </main>
+    
+        <!-- ===================================================================== -->
+        <!-- MODAL 1: MAHSULOT HAQIDA BATAFSIL TEXNIK MA'LUMOT MODALI              -->
+        <!-- ===================================================================== -->
+        <div id="product-detail-modal"
+            class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80 backdrop-blur-xl">
+            <div
+                class="apple-glass max-w-2xl w-full rounded-3xl p-6 sm:p-8 border border-white/15 relative shadow-2xl transform transition-all">
+                <button onclick="closeProductModal()"
+                    class="absolute top-5 right-5 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+    
+                <div id="modal-content-area">
+                    <!-- JavaScript orqali to'ldiriladi -->
+                </div>
+            </div>
+        </div>
+    
+        <!-- ===================================================================== -->
+        <!-- MODAL 2: TELEGRAM BOT TOKEN VA CHAT ID SOZLAMALARI MODALI             -->
+        <!-- ===================================================================== -->
+        <div id="bot-settings-modal"
+            class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80 backdrop-blur-xl">
+            <div class="apple-glass max-w-lg w-full rounded-3xl p-6 sm:p-8 border border-white/15 relative shadow-2xl">
+                <button onclick="closeBotSettingsModal()"
+                    class="absolute top-5 right-5 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+    
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-10 h-10 rounded-full bg-white text-black flex items-center justify-center">
+                        <i class="fa-brands fa-telegram text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-white">Telegram Bot Sozlamalari</h3>
+                        <p class="text-xs text-apple-gray">Arizalar to'g'ridan-to'g'ri sizning botingizga keladi</p>
+                    </div>
+                </div>
+    
+                <div class="space-y-4 text-xs text-apple-silver bg-white/5 p-4 rounded-2xl border border-white/10 mb-5">
+                    <p><strong class="text-white">1-qadam:</strong> Telegramda <span
+                            class="text-white font-mono">@BotFather</span> orqali yangi bot yarating va <strong>API
+                            Token</strong> nusxasini oling.</p>
+                    <p><strong class="text-white">2-qadam:</strong> Botingizga <span
+                            class="font-mono text-white">/start</span> bosing va <span
+                            class="text-white font-mono">@userinfobot</span> orqali o'z <strong>Chat ID</strong>
+                        raqamingizni bilib oling.</p>
+                </div>
+    
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-medium text-apple-silver mb-1.5">Telegram Bot Token</label>
+                        <input type="text" id="tg-bot-token" placeholder="123456789:ABCdefGHIjklMNOpqrsTUVwxyz"
+                            class="w-full px-4 py-3 rounded-xl bg-black/70 border border-white/15 text-xs font-mono text-white focus:outline-none focus:border-white">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-apple-silver mb-1.5">Admin Chat ID (yoki Guruh
+                            ID)</label>
+                        <input type="text" id="tg-chat-id" placeholder="987654321"
+                            class="w-full px-4 py-3 rounded-xl bg-black/70 border border-white/15 text-xs font-mono text-white focus:outline-none focus:border-white">
+                    </div>
+    
+                    <div class="flex flex-col sm:flex-row gap-3 pt-2">
+                        <button onclick="saveBotSettings()"
+                            class="flex-1 py-3 rounded-xl bg-white text-black font-semibold text-xs hover:bg-apple-silver transition-all">
+                            Saqlash
+                        </button>
+                        <button onclick="sendTestTelegramMessage()"
+                            class="flex-1 py-3 rounded-xl bg-white/10 text-white font-semibold text-xs hover:bg-white/20 transition-all border border-white/15">
+                            Test Xabar Yuborish
+                        </button>
+                    </div>
+                    <div id="bot-settings-feedback" class="hidden text-xs p-3 rounded-xl"></div>
+                </div>
+            </div>
+        </div>
+    
+        <!-- ===================================================================== -->
+        <!-- JAVASCRIPT: FOTOREALISTIK 3D ENGINE, KATALOG VA TELEGRAM INTEGRATSIYA  -->
+        <!-- ===================================================================== -->
+        <script>
+            // =========================================================================
+            // 1. APPLE MAHSULOTLARI MA'LUMOTLAR BAZASI
+            // =========================================================================
+            const appleProducts = [
+                {
+                    id: 'macbook-pro',
+                    deviceKey: 'macbook',
+                    name: 'MacBook Pro 16" M4 Max',
+                    category: 'Noutbuklar',
+                    price: '$3,499',
+                    tagline: 'Cheksiz quvvat. Mutlaq mukammallik.',
+                    badge: 'Flagman',
+                    specs: {
+                        chip: 'Apple M4 Max (16-yadroli CPU, 40-yadroli GPU)',
+                        display: '16.2" Liquid Retina XDR, 3456×2234, 120Hz ProMotion',
+                        memory: '48GB Unified Memory / 1TB SSD',
+                        battery: '24 soatgacha video ijro etish',
+                        material: '100% qayta ishlangan anodlangan alyuminiy korpus',
+                        ports: '3x Thunderbolt 5, HDMI, SDXC, MagSafe 3'
+                    },
+                    description: 'Eng murakkab 3D renderlash, 8K video montaj va sun’iy intellekt modellarini o‘qitish uchun yaratilgan eng kuchli professional noutbuk.'
+                },
+                {
+                    id: 'iphone-16-pro',
+                    deviceKey: 'iphone',
+                    name: 'iPhone 16 Pro Max',
+                    category: 'Smartfonlar',
+                    price: '$1,599',
+                    tagline: 'Titan mustahkamligi. A18 Pro tezligi.',
+                    badge: 'Yangi',
+                    specs: {
+                        chip: 'Apple A18 Pro (6-yadroli GPU, 16-yadroli Neural Engine)',
+                        display: '6.9" Super Retina XDR OLED, Always-On, Dynamic Island',
+                        memory: '256GB / 512GB / 1TB NVMe',
+                        battery: '33 soatgacha video ijro etish',
+                        material: '5-sinf mikro-qumlangan Titan ramka va Ceramic Shield',
+                        ports: 'USB-C (USB 3, 10Gbps), Camera Control tugmasi'
+                    },
+                    description: '4K 120fps Dolby Vision video suratga olish imkoniyatiga ega Pro kamera tizimi va o‘ta yupqa ramkali ulkan Super Retina XDR displey.'
+                },
+                {
+                    id: 'ipad-pro-m4',
+                    deviceKey: 'ipad',
+                    name: 'iPad Pro 13" M4',
+                    category: 'Planshetlar',
+                    price: '$1,299',
+                    tagline: 'Aql bovar qilmas darajada yupqa. M4 kuchi.',
+                    badge: 'Ultra Thin',
+                    specs: {
+                        chip: 'Apple M4 chipi (10-yadroli CPU, Ray Tracing GPU)',
+                        display: '13" Ultra Retina XDR Tandem OLED, 1600 nit HDR',
+                        memory: '16GB RAM / 512GB SSD (Nano-texture shisha opsiyasi)',
+                        battery: '10 soatgacha Wi-Fi orqali ishlash',
+                        material: 'Atigi 5.1 mm qalinlikdagi alyuminiy unibody korpus',
+                        ports: 'Thunderbolt / USB 4, Apple Pencil Pro qo‘llab-quvvatlovi'
+                    },
+                    description: 'Apple tarixidagi eng yupqa qurilma. Ikki qatlamli Tandem OLED ekrani va Apple Pencil Pro bilan raqamli ijodkorlikning cho‘qqisi.'
+                },
+                {
+                    id: 'watch-ultra-2',
+                    deviceKey: 'watch',
+                    name: 'Apple Watch Ultra 2',
+                    category: 'Aqlli Soatlar',
+                    price: '$799',
+                    tagline: 'Ekstremal sharoitlar uchun yaratilgan.',
+                    badge: 'Titan',
+                    specs: {
+                        chip: 'Apple S9 SiP (64-bit ikki yadroli protsessor)',
+                        display: '49mm Yassi Safir kristal, 3000 nit maksimal yorqinlik',
+                        memory: '64GB ichki xotira',
+                        battery: '36 soat normal / 72 soat Low Power rejimida',
+                        material: '49mm Aerokosmik Titan korpus, 100m suvga chidamlilik',
+                        ports: 'Ikki chastotali aniq GPS (L1 + L5), Sirena 86dB'
+                    },
+                    description: 'Alpinistlar, g‘avvoslar va marafonchilar uchun mo‘ljallangan qora yoki tabiiy titan korpusli eng chidamli aqlli soat.'
+                },
+                {
+                    id: 'airpods-max',
+                    deviceKey: 'airpods',
+                    name: 'AirPods Max (USB-C)',
+                    category: 'Audio',
+                    price: '$549',
+                    tagline: 'Studiya darajasidagi sof ovoz.',
+                    badge: 'Hi-Fi Audio',
+                    specs: {
+                        chip: 'Har bir quloqchinda Apple H1 audio chipi',
+                        display: 'Raqamli toj (Digital Crown) va ANC tugmasi',
+                        memory: 'Adaptiv EQ va Personalized Spatial Audio',
+                        battery: '20 soatgacha faol shovqinni bostirish (ANC) bilan',
+                        material: 'Anodlangan alyuminiy kosachalar va nafas oluvchi to‘r',
+                        ports: 'USB-C Lossless Audio va tezkor quvvatlash'
+                    },
+                    description: 'Yuqori aniqlikdagi dinamik drayverlar va sanoatdagi eng kuchli Active Noise Cancellation texnologiyasi bilan musiqa olamiga sho‘ng‘ing.'
+                },
+                {
+                    id: 'vision-pro',
+                    deviceKey: 'ipad',
+                    name: 'Apple Vision Pro',
+                    category: 'Fazoviy Kompyuter',
+                    price: '$3,499',
+                    tagline: 'Fazoviy hisoblash davriga xush kelibsiz.',
+                    badge: 'Spatial',
+                    specs: {
+                        chip: 'Apple M2 + R1 real-vaqt sensor protsessori',
+                        display: '23 million pikselli Micro-OLED (har bir ko‘z uchun 4K+)',
+                        memory: '16GB Unified Memory / 512GB SSD',
+                        battery: '2.5 soatgacha tashqi alyuminiy batareya bloki',
+                        material: '3D shakllangan laminatlangan shisha va alyuminiy ramka',
+                        ports: 'Ko‘z, qo‘l va ovoz orqali kontrollersiz boshqaruv'
+                    },
+                    description: 'Raqamli kontentni atrofingizdagi real muhit bilan uyg‘unlashtiruvchi inqilobiy fazoviy kompyuter.'
+                }
+            ];
+
+            // Mahsulot kartalarini chizish (qora-oq-kulrang minimalist SVG illyustratsiyalar bilan)
+            function renderProductCards() {
+                const grid = document.getElementById('products-grid');
+                grid.innerHTML = appleProducts.map((product, index) => `
+                    <div class="reveal-up apple-glass rounded-3xl p-6 sm:p-7 flex flex-col justify-between group hover:border-white/25 transition-all duration-500" style="transition-delay: ${index * 80}ms;">
+                        <div>
+                            <!-- Yuqori teg va kategoriya -->
+                            <div class="flex items-center justify-between mb-6">
+                                <span class="text-[11px] font-medium uppercase tracking-widest text-apple-gray">${product.category}</span>
+                                <span class="px-3 py-1 rounded-full bg-white/10 text-[10px] font-semibold text-white border border-white/10">${product.badge}</span>
+                            </div>
+    
+                            <!-- Fotorealistik Monoxrom Qurilma Vizuali -->
+                            <div class="relative h-48 rounded-2xl bg-gradient-to-b from-white/[0.06] to-black border border-white/10 mb-6 flex items-center justify-center overflow-hidden">
+                                <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.12)_0%,transparent_70%)] opacity-60 group-hover:opacity-100 transition-opacity"></div>
+                                ${getProductStudioVisual(product.id)}
+                            </div>
+    
+                            <!-- Nom va narx -->
+                            <div class="flex items-baseline justify-between gap-2 mb-2">
+                                <h3 class="text-xl font-bold text-white tracking-tight">${product.name}</h3>
+                                <span class="text-base font-semibold text-apple-silver">${product.price}</span>
+                            </div>
+                            <p class="text-xs text-apple-gray mb-5 leading-relaxed">${product.tagline}</p>
+    
+                            <!-- Qisqa spetsifikatsiyalar -->
+                            <div class="space-y-2 border-t border-white/10 pt-4 mb-6 text-xs">
+                                <div class="flex justify-between">
+                                    <span class="text-apple-gray">Protsessor:</span>
+                                    <span class="text-white font-medium text-right max-w-[65%] truncate">${product.specs.chip.split('(')[0]}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-apple-gray">Korpus:</span>
+                                    <span class="text-apple-silver text-right max-w-[65%] truncate">${product.specs.material.split(',')[0]}</span>
+                                </div>
+                            </div>
+                        </div>
+    
+                        <!-- Harakat tugmalari -->
+                        <div class="grid grid-cols-2 gap-3 pt-2">
+                            <button onclick="viewProductIn3D('${product.deviceKey}', '${product.name}')"
+                                class="py-3 px-3 rounded-xl bg-white/10 hover:bg-white hover:text-black text-white text-xs font-semibold transition-all flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-cube"></i>
+                                <span>3D da ko'rish</span>
+                            </button>
+                            <button onclick="openProductModal('${product.id}')"
+                                class="py-3 px-3 rounded-xl bg-black/60 hover:bg-white/15 text-apple-silver hover:text-white border border-white/15 text-xs font-semibold transition-all">
+                                Batafsil ma'lumot
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            // Har bir mahsulot uchun yuqori aniqlikdagi monoxrom metallik SVG vizual
+            function getProductStudioVisual(id) {
+                switch (id) {
+                    case 'macbook-pro':
+                        return `<svg viewBox="0 0 260 150" class="w-52 h-32 drop-shadow-[0_15px_25px_rgba(0,0,0,0.9)] group-hover:scale-105 transition-transform duration-500">
+                            <defs>
+                                <linearGradient id="mbScreen" x1="0" y1="0" x2="1" y2="1">
+                                    <stop offset="0%" stop-color="#2c2c30"/><stop offset="50%" stop-color="#0a0a0c"/><stop offset="100%" stop-color="#1f1f23"/>
+                                </linearGradient>
+                                <linearGradient id="mbBody" x1="0" y1="0" x2="1" y2="0">
+                                    <stop offset="0%" stop-color="#52525b"/><stop offset="50%" stop-color="#a1a1aa"/><stop offset="100%" stop-color="#3f3f46"/>
+                                </linearGradient>
+                            </defs>
+                            <rect x="42" y="18" width="176" height="106" rx="8" fill="#18181b" stroke="#52525b" stroke-width="1.5"/>
+                            <rect x="47" y="23" width="166" height="96" rx="4" fill="url(#mbScreen)"/>
+                            <path d="M122 23 h16 v4 a2 2 0 0 1 -2 2 h-12 a2 2 0 0 1 -2 -2 z" fill="#000"/>
+                            <circle cx="130" cy="70" r="24" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
+                            <path d="M22 124 h216 l-8 8 H30 z" fill="url(#mbBody)"/>
+                            <rect x="112" y="124" width="36" height="3" rx="1.5" fill="#27272a"/>
+                        </svg>`;
+                    case 'iphone-16-pro':
+                        return `<svg viewBox="0 0 140 160" class="w-32 h-36 drop-shadow-[0_15px_25px_rgba(0,0,0,0.9)] group-hover:scale-105 transition-transform duration-500">
+                            <rect x="38" y="12" width="64" height="136" rx="14" fill="#18181b" stroke="#8e8d8a" stroke-width="2.5"/>
+                            <rect x="42" y="16" width="56" height="128" rx="11" fill="#09090b"/>
+                            <rect x="59" y="21" width="22" height="6" rx="3" fill="#000" stroke="#27272a" stroke-width="0.5"/>
+                            <circle cx="70" cy="80" r="18" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
+                        </svg>`;
+                    case 'ipad-pro-m4':
+                        return `<svg viewBox="0 0 200 150" class="w-44 h-32 drop-shadow-[0_15px_25px_rgba(0,0,0,0.9)] group-hover:scale-105 transition-transform duration-500">
+                            <rect x="32" y="16" width="136" height="104" rx="10" fill="#121214" stroke="#71717a" stroke-width="2"/>
+                            <rect x="37" y="21" width="126" height="94" rx="6" fill="#050505"/>
+                            <line x1="30" y1="130" x2="170" y2="130" stroke="#d4d4d8" stroke-width="3.5" stroke-linecap="round"/>
+                        </svg>`;
+                    case 'watch-ultra-2':
+                        return `<svg viewBox="0 0 140 160" class="w-32 h-36 drop-shadow-[0_15px_25px_rgba(0,0,0,0.9)] group-hover:scale-105 transition-transform duration-500">
+                            <rect x="52" y="10" width="36" height="140" rx="8" fill="#27272a"/>
+                            <rect x="42" y="38" width="56" height="84" rx="16" fill="#18181b" stroke="#a1a1aa" stroke-width="2.5"/>
+                            <rect x="47" y="44" width="46" height="72" rx="12" fill="#000"/>
+                            <circle cx="70" cy="80" r="16" fill="none" stroke="#e4e4e7" stroke-width="1.5" stroke-dasharray="3 3"/>
+                            <rect x="99" y="56" width="4" height="16" rx="2" fill="#a1a1aa"/>
+                        </svg>`;
+                    case 'airpods-max':
+                        return `<svg viewBox="0 0 160 150" class="w-36 h-32 drop-shadow-[0_15px_25px_rgba(0,0,0,0.9)] group-hover:scale-105 transition-transform duration-500">
+                            <path d="M40 82 C40 28, 120 28, 120 82" fill="none" stroke="#a1a1aa" stroke-width="6" stroke-linecap="round"/>
+                            <rect x="28" y="74" width="22" height="44" rx="11" fill="#27272a" stroke="#d4d4d8" stroke-width="1.5"/>
+                            <rect x="110" y="74" width="22" height="44" rx="11" fill="#27272a" stroke="#d4d4d8" stroke-width="1.5"/>
+                        </svg>`;
+                    default:
+                        return `<svg viewBox="0 0 200 140" class="w-44 h-32 drop-shadow-[0_15px_25px_rgba(0,0,0,0.9)] group-hover:scale-105 transition-transform duration-500">
+                            <path d="M35 65 C35 42, 165 42, 165 65 C165 95, 125 102, 100 88 C75 102, 35 95, 35 65 Z" fill="#18181b" stroke="#d4d4d8" stroke-width="2.5"/>
+                            <path d="M44 65 C44 49, 156 49, 156 65" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="1.5"/>
+                        </svg>`;
+                }
+            }
+
+            // Modalni ochish (Batafsil ma'lumot)
+            function openProductModal(productId) {
+                const product = appleProducts.find(p => p.id === productId);
+                if (!product) return;
+
+                const modal = document.getElementById('product-detail-modal');
+                const area = document.getElementById('modal-content-area');
+
+                area.innerHTML = `
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="px-2.5 py-0.5 rounded-full bg-white/10 text-[10px] font-semibold text-white uppercase tracking-wider">${product.category}</span>
+                        <span class="text-xs text-apple-gray">${product.badge}</span>
+                    </div>
+                    <div class="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 mb-4">
+                        <h3 class="text-2xl sm:text-3xl font-bold text-white">${product.name}</h3>
+                        <span class="text-xl font-bold text-apple-silver">${product.price}</span>
+                    </div>
+                    <p class="text-sm text-apple-gray leading-relaxed mb-6">${product.description}</p>
+    
+                    <div class="bg-black/50 rounded-2xl p-5 border border-white/10 space-y-3 text-xs mb-6">
+                        <div class="flex flex-col sm:flex-row sm:justify-between border-b border-white/10 pb-2.5 gap-1">
+                            <span class="text-apple-gray">Protsessor (Chip):</span>
+                            <span class="text-white font-medium sm:text-right">${product.specs.chip}</span>
+                        </div>
+                        <div class="flex flex-col sm:flex-row sm:justify-between border-b border-white/10 pb-2.5 gap-1">
+                            <span class="text-apple-gray">Displey:</span>
+                            <span class="text-white font-medium sm:text-right">${product.specs.display}</span>
+                        </div>
+                        <div class="flex flex-col sm:flex-row sm:justify-between border-b border-white/10 pb-2.5 gap-1">
+                            <span class="text-apple-gray">Xotira:</span>
+                            <span class="text-white font-medium sm:text-right">${product.specs.memory}</span>
+                        </div>
+                        <div class="flex flex-col sm:flex-row sm:justify-between border-b border-white/10 pb-2.5 gap-1">
+                            <span class="text-apple-gray">Batareya quvvati:</span>
+                            <span class="text-white font-medium sm:text-right">${product.specs.battery}</span>
+                        </div>
+                        <div class="flex flex-col sm:flex-row sm:justify-between border-b border-white/10 pb-2.5 gap-1">
+                            <span class="text-apple-gray">Korpus materiali:</span>
+                            <span class="text-white font-medium sm:text-right">${product.specs.material}</span>
+                        </div>
+                        <div class="flex flex-col sm:flex-row sm:justify-between gap-1">
+                            <span class="text-apple-gray">Portlar va Aloqa:</span>
+                            <span class="text-white font-medium sm:text-right">${product.specs.ports}</span>
+                        </div>
+                    </div>
+    
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <button onclick="closeProductModal(); viewProductIn3D('${product.deviceKey}', '${product.name}')"
+                            class="flex-1 py-3.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold transition-all flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-cube"></i>
+                            <span>3D Studiyada Ko'rish</span>
+                        </button>
+                        <button onclick="closeProductModal(); selectProductForOrder('${product.name}')"
+                            class="flex-1 py-3.5 rounded-2xl bg-white hover:bg-apple-silver text-black text-xs font-semibold transition-all flex items-center justify-center gap-2">
+                            <i class="fa-brands fa-telegram"></i>
+                            <span>Buyurtma Berish</span>
+                        </button>
+                    </div>
+                `;
+
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            }
+
+            function closeProductModal() {
+                const modal = document.getElementById('product-detail-modal');
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+
+            function viewProductIn3D(deviceKey, productName) {
+                switch3DDevice(deviceKey);
+                document.getElementById('home').scrollIntoView({ behavior: 'smooth' });
+            }
+
+            function selectProductForOrder(productName) {
+                const select = document.getElementById('order-product');
+                for (let i = 0; i < select.options.length; i++) {
+                    if (select.options[i].value.includes(productName.split(' ')[0])) {
+                        select.selectedIndex = i;
+                        break;
+                    }
+                }
+                document.getElementById('order').scrollIntoView({ behavior: 'smooth' });
+            }
+
+            // =========================================================================
+            // 2. FOTOREALISTIK 3D STUDIYA (THREE.JS PBR METALLIC & GLASS SHADERS)
+            // =========================================================================
+            let scene, camera, renderer, controls;
+            let currentDeviceGroup = null;
+            let primaryMetalMaterial, secondaryMetalMaterial, darkGlassMaterial, screenGlowMaterial, accentMetalMaterial;
+            let currentColorHex = '#2e2e32';
+            let currentColorName = 'Space Black';
+            let currentDeviceType = 'macbook';
+            let scrollOffsetY = 0;
+
+            // Yuqori aniqlikdagi Retina Ekran Teksturasini procedural yaratish (Multfilm emas, haqiqiy Apple Studio UI)
+            function createRetinaScreenTexture(type) {
+                const canvas = document.createElement('canvas');
+                canvas.width = 1024;
+                canvas.height = 640;
+                const ctx = canvas.getContext('2d');
+
+                // Chuqur qora-kulrang Apple Pro Wallpaper
+                const grad = ctx.createRadialGradient(512, 320, 40, 512, 320, 580);
+                grad.addColorStop(0, '#2c2c32');
+                grad.addColorStop(0.45, '#111114');
+                grad.addColorStop(1, '#020203');
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, 1024, 640);
+
+                // Yorug'lik halqasi (Apple Pro XDR abstract wave)
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.14)';
+                ctx.lineWidth = 2;
+                for (let i = 0; i < 6; i++) {
+                    ctx.beginPath();
+                    ctx.ellipse(512, 320, 180 + i * 38, 95 + i * 20, Math.PI / 7, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+
+                // Minimalist markaziy yozuv
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+                ctx.font = '600 32px Inter, -apple-system, sans-serif';
+                ctx.textAlign = 'center';
+                const labelMap = {
+                    macbook: 'MacBook Pro',
+                    iphone: 'iPhone 16 Pro',
+                    ipad: 'iPad Pro M4',
+                    watch: '10:09',
+                    airpods: 'Spatial Audio'
+                };
+                ctx.fillText(labelMap[type] || 'Apple Studio', 512, 325);
+
+                ctx.fillStyle = 'rgba(161, 161, 166, 0.7)';
+                ctx.font = '400 15px Inter, -apple-system, sans-serif';
+                ctx.fillText('Liquid Retina XDR • Studio Edition', 512, 355);
+
+                // Yuqori macOS/iOS Status Bar
+                ctx.fillStyle = 'rgba(255,255,255,0.06)';
+                ctx.fillRect(0, 0, 1024, 24);
+
+                const texture = new THREE.CanvasTexture(canvas);
+                texture.anisotropy = 8;
+                return texture;
+            }
+
+            // Studiya muhiti yoritish xaritasi (PMREM Environment - haqiqiy metall jilosi uchun)
+            function createStudioEnvironment(renderer) {
+                const pmremGenerator = new THREE.PMREMGenerator(renderer);
+                pmremGenerator.compileEquirectangularShader();
+
+                const envScene = new THREE.Scene();
+                envScene.background = new THREE.Color(0x050507);
+
+                // Studiya softbox chiroqlari (real metall aks ettirish uchun)
+                const lightBoxGeo = new THREE.PlaneGeometry(12, 12);
+                const topLightMat = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide });
+                const topLight = new THREE.Mesh(lightBoxGeo, topLightMat);
+                topLight.position.set(0, 10, 2);
+                topLight.rotation.x = Math.PI / 2;
+                envScene.add(topLight);
+
+                const sideLightMat = new THREE.MeshBasicMaterial({ color: 0xd4d4d8, side: THREE.DoubleSide });
+                const leftLight = new THREE.Mesh(lightBoxGeo, sideLightMat);
+                leftLight.position.set(-10, 2, 4);
+                leftLight.rotation.y = Math.PI / 2;
+                envScene.add(leftLight);
+
+                const rightLight = new THREE.Mesh(lightBoxGeo, sideLightMat);
+                rightLight.position.set(10, 2, -2);
+                rightLight.rotation.y = -Math.PI / 2;
+                envScene.add(rightLight);
+
+                const envRT = pmremGenerator.fromScene(envScene, 0.04);
+                pmremGenerator.dispose();
+                return envRT.texture;
+            }
+
+            // Barcha 3D materiallarni yaratish (Fotorealistik PBR)
+            function initMaterials() {
+                primaryMetalMaterial = new THREE.MeshPhysicalMaterial({
+                    color: new THREE.Color(currentColorHex),
+                    metalness: 0.88,
+                    roughness: 0.24,
+                    clearcoat: 0.35,
+                    clearcoatRoughness: 0.18,
+                    reflectivity: 0.95
+                });
+
+                secondaryMetalMaterial = new THREE.MeshStandardMaterial({
+                    color: 0x161618,
+                    metalness: 0.85,
+                    roughness: 0.35
+                });
+
+                accentMetalMaterial = new THREE.MeshStandardMaterial({
+                    color: 0xd4d4d8,
+                    metalness: 0.95,
+                    roughness: 0.15
+                });
+
+                darkGlassMaterial = new THREE.MeshPhysicalMaterial({
+                    color: 0x050507,
+                    metalness: 0.1,
+                    roughness: 0.06,
+                    clearcoat: 1.0,
+                    clearcoatRoughness: 0.04
+                });
+
+                screenGlowMaterial = new THREE.MeshStandardMaterial({
+                    map: createRetinaScreenTexture('macbook'),
+                    roughness: 0.12,
+                    metalness: 0.08,
+                    emissive: new THREE.Color(0xffffff),
+                    emissiveMap: createRetinaScreenTexture('macbook'),
+                    emissiveIntensity: 0.45
+                });
+            }
+
+            // Yordamchi: Yumaloq burchakli 3D panel yasash
+            function createRoundedBoxMesh(width, height, depth, radius, material) {
+                const shape = new THREE.Shape();
+                const x = -width / 2;
+                const y = -height / 2;
+                shape.moveTo(x + radius, y);
+                shape.lineTo(x + width - radius, y);
+                shape.quadraticCurveTo(x + width, y, x + width, y + radius);
+                shape.lineTo(x + width, y + height - radius);
+                shape.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+                shape.lineTo(x + radius, y + height);
+                shape.quadraticCurveTo(x, y + height, x, y + height - radius);
+                shape.lineTo(x, y + radius);
+                shape.quadraticCurveTo(x, y, x + radius, y);
+
+                const extrudeSettings = {
+                    steps: 1,
+                    depth: depth,
+                    bevelEnabled: true,
+                    bevelThickness: 0.015,
+                    bevelSize: 0.015,
+                    bevelSegments: 4
+                };
+                const geo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+                geo.center();
+                const mesh = new THREE.Mesh(geo, material);
+                mesh.castShadow = true;
+                mesh.receiveShadow = true;
+                return mesh;
+            }
+
+            // 1. FOTOREALISTIK MACBOOK PRO 16" 3D MODELI
+            function buildMacBookProModel() {
+                const group = new THREE.Group();
+
+                // Pastki Unibody Alyuminiy Korpus (Base)
+                const baseWidth = 3.55;
+                const baseDepth = 2.45;
+                const baseHeight = 0.085;
+                const baseMesh = createRoundedBoxMesh(baseWidth, baseDepth, baseHeight, 0.14, primaryMetalMaterial);
+                baseMesh.rotation.x = Math.PI / 2;
+                baseMesh.position.y = -0.65;
+                group.add(baseMesh);
+
+                // Klaviatura chuqurchasi (Recessed Keyboard Deck)
+                const kbRecess = new THREE.Mesh(
+                    new THREE.BoxGeometry(3.05, 0.01, 1.15),
+                    secondaryMetalMaterial
+                );
+                kbRecess.position.set(0, -0.602, -0.22);
+                group.add(kbRecess);
+
+                // Alohida Klaviatura Tugmalari (6 qator realist tugmalar)
+                const keyMat = new THREE.MeshStandardMaterial({ color: 0x111113, roughness: 0.45, metalness: 0.2 });
+                const keyGeo = new THREE.BoxGeometry(0.17, 0.018, 0.15);
+                for (let row = 0; row < 6; row++) {
+                    const cols = row === 5 ? 10 : 14;
+                    for (let col = 0; col < cols; col++) {
+                        const key = new THREE.Mesh(keyGeo, keyMat);
+                        const xOffset = (col - (cols - 1) / 2) * 0.205;
+                        const zOffset = -0.68 + row * 0.18;
+                        key.position.set(xOffset, -0.595, zOffset);
+                        if (row === 5 && col === 4) {
+                            key.scale.x = 3.2; // Spacebar
+                        }
+                        group.add(key);
+                    }
+                }
+
+                // Force Touch Shisha Trackpad
+                const trackpad = new THREE.Mesh(
+                    new THREE.BoxGeometry(1.15, 0.008, 0.72),
+                    new THREE.MeshPhysicalMaterial({
+                        color: new THREE.Color(currentColorHex).multiplyScalar(0.88),
+                        metalness: 0.75,
+                        roughness: 0.15,
+                        clearcoat: 0.8
+                    })
+                );
+                trackpad.position.set(0, -0.601, 0.72);
+                group.add(trackpad);
+
+                // Yon Dinamik Panjaralari (Speaker Grilles)
+                const grilleGeo = new THREE.BoxGeometry(0.18, 0.006, 1.12);
+                const leftGrille = new THREE.Mesh(grilleGeo, secondaryMetalMaterial);
+                leftGrille.position.set(-1.62, -0.601, -0.22);
+                group.add(leftGrille);
+
+                const rightGrille = new THREE.Mesh(grilleGeo, secondaryMetalMaterial);
+                rightGrille.position.set(1.62, -0.601, -0.22);
+                group.add(rightGrille);
+
+                // Yuqori Displey Qopqog'i (Lid Assembly - 108 gradus ochiq)
+                const lidPivot = new THREE.Group();
+                lidPivot.position.set(0, -0.60, -1.18);
+                lidPivot.rotation.x = -0.26; // Realistik ochilish burchagi
+
+                // Alyuminiy Orqa Qopqoq
+                const lidBack = createRoundedBoxMesh(3.55, 2.38, 0.045, 0.14, primaryMetalMaterial);
+                lidBack.position.set(0, 1.18, 0);
+                lidPivot.add(lidBack);
+
+                // Qora Shisha Ramka (Bezel)
+                const bezel = createRoundedBoxMesh(3.48, 2.31, 0.015, 0.11, darkGlassMaterial);
+                bezel.position.set(0, 1.18, 0.025);
+                lidPivot.add(bezel);
+
+                // Liquid Retina XDR Ekran
+                const tex = createRetinaScreenTexture('macbook');
+                screenGlowMaterial.map = tex;
+                screenGlowMaterial.emissiveMap = tex;
+                screenGlowMaterial.needsUpdate = true;
+
+                const screenMesh = new THREE.Mesh(
+                    new THREE.PlaneGeometry(3.34, 2.16),
+                    screenGlowMaterial
+                );
+                screenMesh.position.set(0, 1.19, 0.036);
+                lidPivot.add(screenMesh);
+
+                // Yuqori Kamera Notch
+                const notch = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.32, 0.07, 0.01),
+                    new THREE.MeshBasicMaterial({ color: 0x000000 })
+                );
+                notch.position.set(0, 2.235, 0.038);
+                lidPivot.add(notch);
+
+                // Orqa Qopqoqdagi Yaltiroq Apple Logotipi (Metallik ko'zgu)
+                const logoDisc = new THREE.Mesh(
+                    new THREE.CircleGeometry(0.24, 32),
+                    accentMetalMaterial
+                );
+                logoDisc.rotation.y = Math.PI;
+                logoDisc.position.set(0, 1.2, -0.039);
+                lidPivot.add(logoDisc);
+
+                group.add(lidPivot);
+                group.position.y = -0.15;
+                return group;
+            }
+
+            // 2. FOTOREALISTIK IPHONE 16 PRO MAX 3D MODELI
+            function buildIPhoneModel() {
+                const group = new THREE.Group();
+
+                // 5-sinf Titan Korpus
+                const body = createRoundedBoxMesh(1.48, 3.05, 0.15, 0.22, primaryMetalMaterial);
+                group.add(body);
+
+                // Old Shisha Ekran (Super Retina XDR)
+                const tex = createRetinaScreenTexture('iphone');
+                screenGlowMaterial.map = tex;
+                screenGlowMaterial.emissiveMap = tex;
+                screenGlowMaterial.needsUpdate = true;
+
+                const screen = createRoundedBoxMesh(1.38, 2.95, 0.01, 0.18, screenGlowMaterial);
+                screen.position.z = 0.082;
+                group.add(screen);
+
+                // Dynamic Island
+                const island = createRoundedBoxMesh(0.38, 0.09, 0.012, 0.04, new THREE.MeshBasicMaterial({ color: 0x000000 }));
+                island.position.set(0, 1.32, 0.09);
+                group.add(island);
+
+                // Orqa Kamera Bloki (Triple-Lens Pro Camera System)
+                const camBump = createRoundedBoxMesh(0.68, 0.72, 0.05, 0.14, darkGlassMaterial);
+                camBump.position.set(-0.32, 1.05, -0.095);
+                group.add(camBump);
+
+                // 3 ta Safir Kamera Linzalari
+                const lensPositions = [
+                    [-0.45, 1.21, -0.125],
+                    [-0.45, 0.89, -0.125],
+                    [-0.18, 1.05, -0.125]
+                ];
+                lensPositions.forEach(pos => {
+                    const ring = new THREE.Mesh(
+                        new THREE.CylinderGeometry(0.14, 0.14, 0.04, 32),
+                        accentMetalMaterial
+                    );
+                    ring.rotation.x = Math.PI / 2;
+                    ring.position.set(pos[0], pos[1], pos[2]);
+                    group.add(ring);
+
+                    const glass = new THREE.Mesh(
+                        new THREE.CylinderGeometry(0.10, 0.10, 0.045, 32),
+                        darkGlassMaterial
+                    );
+                    glass.rotation.x = Math.PI / 2;
+                    glass.position.set(pos[0], pos[1], pos[2] - 0.004);
+                    group.add(glass);
+                });
+
+                // Yon Titan Tugmalar (Action Button & Camera Control)
+                const btnGeo = new THREE.BoxGeometry(0.03, 0.28, 0.05);
+                const powerBtn = new THREE.Mesh(btnGeo, primaryMetalMaterial);
+                powerBtn.position.set(0.755, 0.45, 0);
+                group.add(powerBtn);
+
+                return group;
+            }
+
+            // 3. FOTOREALISTIK IPAD PRO M4 + APPLE PENCIL PRO 3D MODELI
+            function buildIPadProModel() {
+                const group = new THREE.Group();
+
+                // Ultra-yupqa (5.1mm) Alyuminiy Korpus
+                const body = createRoundedBoxMesh(2.55, 3.35, 0.07, 0.16, primaryMetalMaterial);
+                group.add(body);
+
+                // Tandem OLED Ekran
+                const tex = createRetinaScreenTexture('ipad');
+                screenGlowMaterial.map = tex;
+                screenGlowMaterial.emissiveMap = tex;
+                screenGlowMaterial.needsUpdate = true;
+
+                const screen = createRoundedBoxMesh(2.42, 3.22, 0.01, 0.12, screenGlowMaterial);
+                screen.position.z = 0.045;
+                group.add(screen);
+
+                // Orqa Kamera Moduli
+                const camModule = createRoundedBoxMesh(0.42, 0.42, 0.03, 0.09, secondaryMetalMaterial);
+                camModule.position.set(-0.92, 1.32, -0.05);
+                group.add(camModule);
+
+                // Magnitli Apple Pencil Pro (yon tomonda)
+                const pencilGroup = new THREE.Group();
+                const pencilBody = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.042, 0.042, 2.4, 24),
+                    new THREE.MeshStandardMaterial({ color: 0xf4f4f5, roughness: 0.25, metalness: 0.1 })
+                );
+                pencilGroup.add(pencilBody);
+
+                const pencilTip = new THREE.Mesh(
+                    new THREE.ConeGeometry(0.042, 0.18, 24),
+                    new THREE.MeshStandardMaterial({ color: 0xd4d4d8, roughness: 0.3 })
+                );
+                pencilTip.position.y = 1.29;
+                pencilGroup.add(pencilTip);
+
+                pencilGroup.position.set(1.36, 0, 0);
+                group.add(pencilGroup);
+
+                return group;
+            }
+
+            // 4. FOTOREALISTIK APPLE WATCH ULTRA 2 3D MODELI
+            function buildWatchUltraModel() {
+                const group = new THREE.Group();
+
+                // 49mm Titan Korpus
+                const caseMesh = createRoundedBoxMesh(1.45, 1.78, 0.36, 0.32, primaryMetalMaterial);
+                group.add(caseMesh);
+
+                // Safir Kristal Displey
+                const tex = createRetinaScreenTexture('watch');
+                screenGlowMaterial.map = tex;
+                screenGlowMaterial.emissiveMap = tex;
+                screenGlowMaterial.needsUpdate = true;
+
+                const screen = createRoundedBoxMesh(1.26, 1.58, 0.02, 0.24, screenGlowMaterial);
+                screen.position.z = 0.19;
+                group.add(screen);
+
+                // Digital Crown va Yon Tugma Himoyasi
+                const crownGuard = createRoundedBoxMesh(0.14, 0.75, 0.24, 0.05, primaryMetalMaterial);
+                crownGuard.position.set(0.75, 0.1, 0);
+                group.add(crownGuard);
+
+                const crown = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.13, 0.13, 0.12, 24),
+                    accentMetalMaterial
+                );
+                crown.rotation.z = Math.PI / 2;
+                crown.position.set(0.81, 0.28, 0.02);
+                group.add(crown);
+
+                // Yuqori va Pastki Ocean/Alpine Tasma (Monoxrom qora/kulrang)
+                const strapMat = new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.65, metalness: 0.1 });
+                const topStrap = createRoundedBoxMesh(0.95, 1.35, 0.12, 0.12, strapMat);
+                topStrap.position.set(0, 1.42, -0.05);
+                topStrap.rotation.x = 0.18;
+                group.add(topStrap);
+
+                const bottomStrap = createRoundedBoxMesh(0.95, 1.35, 0.12, 0.12, strapMat);
+                bottomStrap.position.set(0, -1.42, -0.05);
+                bottomStrap.rotation.x = -0.18;
+                group.add(bottomStrap);
+
+                return group;
+            }
+
+            // 5. FOTOREALISTIK AIRPODS MAX 3D MODELI
+            function buildAirPodsMaxModel() {
+                const group = new THREE.Group();
+
+                // Yuqori Bosh Yoyi (Canopy Mesh & Stainless Steel Frame)
+                const archCurve = new THREE.CatmullRomCurve3([
+                    new THREE.Vector3(-1.12, -0.1, 0),
+                    new THREE.Vector3(-1.05, 1.15, 0),
+                    new THREE.Vector3(0, 1.58, 0),
+                    new THREE.Vector3(1.05, 1.15, 0),
+                    new THREE.Vector3(1.12, -0.1, 0)
+                ]);
+                const archGeo = new THREE.TubeGeometry(archCurve, 48, 0.065, 16, false);
+                const archMesh = new THREE.Mesh(archGeo, accentMetalMaterial);
+                group.add(archMesh);
+
+                // Ichki Nafas Oluvchi To'r (Mesh Canopy)
+                const meshCurve = new THREE.CatmullRomCurve3([
+                    new THREE.Vector3(-0.95, 0.6, 0),
+                    new THREE.Vector3(0, 1.42, 0),
+                    new THREE.Vector3(0.95, 0.6, 0)
+                ]);
+                const meshCanopy = new THREE.Mesh(
+                    new THREE.TubeGeometry(meshCurve, 32, 0.04, 12, false),
+                    secondaryMetalMaterial
+                );
+                group.add(meshCanopy);
+
+                // Chap va O'ng Anodlangan Alyuminiy Quloqchin Kosachalari
+                const cushionMat = new THREE.MeshStandardMaterial({ color: 0x1c1c1f, roughness: 0.75 });
+                [-1.12, 1.12].forEach((xPos, idx) => {
+                    const cupGroup = new THREE.Group();
+
+                    // Tashqi Alyuminiy Kosacha
+                    const outerCup = createRoundedBoxMesh(0.32, 1.25, 0.98, 0.35, primaryMetalMaterial);
+                    outerCup.rotation.y = Math.PI / 2;
+                    cupGroup.add(outerCup);
+
+                    // Yumshoq Memory Foam Yostiqcha
+                    const cushion = createRoundedBoxMesh(0.24, 1.18, 0.92, 0.32, cushionMat);
+                    cushion.rotation.y = Math.PI / 2;
+                    cushion.position.x = idx === 0 ? 0.16 : -0.16;
+                    cupGroup.add(cushion);
+
+                    cupGroup.position.set(xPos, -0.45, 0);
+                    group.add(cupGroup);
+                });
+
+                return group;
+            }
+
+            // Three.js Sahnani Ishga Tushirish
+            function init3DScene() {
+                const canvas = document.getElementById('hero-3d-canvas');
+                scene = new THREE.Scene();
+
+                camera = new THREE.PerspectiveCamera(38, window.innerWidth / window.innerHeight, 0.1, 100);
+                camera.position.set(0, 1.15, 6.2);
+
+                renderer = new THREE.WebGLRenderer({
+                    canvas: canvas,
+                    antialias: true,
+                    alpha: true,
+                    powerPreference: 'high-performance'
+                });
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                renderer.toneMapping = THREE.ACESFilmicToneMapping;
+                renderer.toneMappingExposure = 1.25;
+                renderer.outputEncoding = THREE.sRGBEncoding;
+
+                // Studiya HDR Muhit Xaritasi
+                scene.environment = createStudioEnvironment(renderer);
+
+                // Studiya Uch Nuqtali Yoritish (Key, Fill, Rim Light)
+                const ambientLight = new THREE.AmbientLight(0xffffff, 0.35);
+                scene.add(ambientLight);
+
+                const keyLight = new THREE.DirectionalLight(0xffffff, 1.6);
+                keyLight.position.set(4, 7, 5);
+                scene.add(keyLight);
+
+                const rimLight = new THREE.DirectionalLight(0xe4e4e7, 1.1);
+                rimLight.position.set(-5, 4, -5);
+                scene.add(rimLight);
+
+                const bottomFill = new THREE.PointLight(0xa1a1aa, 0.6, 15);
+                bottomFill.position.set(0, -3, 3);
+                scene.add(bottomFill);
+
+                // OrbitControls (Sichqoncha va Touch aylantirish)
+                controls = new THREE.OrbitControls(camera, renderer.domElement);
+                controls.enableDamping = true;
+                controls.dampingFactor = 0.06;
+                controls.enablePan = false;
+                controls.minDistance = 3.2;
+                controls.maxDistance = 10.5;
+                controls.autoRotate = true;
+                controls.autoRotateSpeed = 0.75;
+
+                initMaterials();
+                switch3DDevice('macbook');
+
+                window.addEventListener('resize', onWindowResize);
+                window.addEventListener('scroll', onScroll3DEffect);
+            }
+
+            // Gadjetlarni almashtirish funksiyasi
+            function switch3DDevice(type) {
+                currentDeviceType = type;
+
+                // Tugmalar UI holatini yangilash
+                document.querySelectorAll('.device-btn').forEach(btn => {
+                    if (btn.dataset.device === type) {
+                        btn.classList.add('bg-white', 'text-black', 'shadow-md');
+                        btn.classList.remove('bg-white/5', 'text-apple-silver');
+                    } else {
+                        btn.classList.remove('bg-white', 'text-black', 'shadow-md');
+                        btn.classList.add('bg-white/5', 'text-apple-silver');
+                    }
+                });
+
+                // Sarlavhalarni yangilash
+                const infoMap = {
+                    macbook: {
+                        title: 'MacBook Pro 16"',
+                        sub: 'Anodlangan alyuminiy korpus, Liquid Retina XDR displey va M4 Max arxitekturasi. 360° aylantiring va rangni o‘zgartiring.',
+                        chassis: '100% Alyuminiy'
+                    },
+                    iphone: {
+                        title: 'iPhone 16 Pro Max',
+                        sub: '5-sinf mikro-qumlangan Titan ramka, uch kamerali Pro tizimi va Dynamic Island. Istalgan rangni tanlang.',
+                        chassis: 'Grade 5 Titan'
+                    },
+                    ipad: {
+                        title: 'iPad Pro 13" M4',
+                        sub: 'Atigi 5.1 mm qalinlikdagi eng yupqa Apple qurilmasi va magnitli Apple Pencil Pro.',
+                        chassis: 'Ultra-Thin Alyuminiy'
+                    },
+                    watch: {
+                        title: 'Apple Watch Ultra 2',
+                        sub: '49 mm aerokosmik titan korpus, Digital Crown va 3000 nit yorqinlikdagi safir displey.',
+                        chassis: '49mm Titan'
+                    },
+                    airpods: {
+                        title: 'AirPods Max',
+                        sub: 'Anodlangan alyuminiy kosachalar va zanglamaydigan po‘latdan yasalgan bosh yoyi.',
+                        chassis: 'Alyuminiy & Po‘lat'
+                    }
+                };
+
+                const meta = infoMap[type];
+                document.getElementById('hero-device-title').textContent = meta.title;
+                document.getElementById('hero-device-subtitle').textContent = meta.sub;
+                document.getElementById('spec-chassis').textContent = meta.chassis;
+
+                // Eski modelni olib tashlash
+                if (currentDeviceGroup) {
+                    scene.remove(currentDeviceGroup);
+                }
+
+                // Yangi 3D modelni qurish
+                switch (type) {
+                    case 'macbook': currentDeviceGroup = buildMacBookProModel(); break;
+                    case 'iphone': currentDeviceGroup = buildIPhoneModel(); break;
+                    case 'ipad': currentDeviceGroup = buildIPadProModel(); break;
+                    case 'watch': currentDeviceGroup = buildWatchUltraModel(); break;
+                    case 'airpods': currentDeviceGroup = buildAirPodsMaxModel(); break;
+                }
+
+                scene.add(currentDeviceGroup);
+            }
+
+            // Cheksiz rang o'zgartirish funksiyasi
+            function setDeviceColor(hexColor, colorLabel) {
+                currentColorHex = hexColor;
+                currentColorName = colorLabel || 'Maxsus Rang';
+
+                if (primaryMetalMaterial) {
+                    primaryMetalMaterial.color.set(hexColor);
+                }
+
+                // UI indikatorlarni sinxronlashtirish
+                document.getElementById('spec-hex').textContent = hexColor.toUpperCase();
+                document.getElementById('custom-3d-color').value = hexColor;
+                document.getElementById('form-color-preview').style.backgroundColor = hexColor;
+                document.getElementById('order-color').value = `${currentColorName} (${hexColor.toUpperCase()})`;
+            }
+
+            function resetCameraView() {
+                camera.position.set(0, 1.15, 6.2);
+                controls.target.set(0, 0, 0);
+                controls.update();
+            }
+
+            function onWindowResize() {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }
+
+            // Skrollga bog'liq 3D paralaks effekti
+            function onScroll3DEffect() {
+                const scrollY = window.scrollY;
+                const maxHero = window.innerHeight;
+                const progress = Math.min(scrollY / maxHero, 1);
+
+                scrollOffsetY = progress * -0.8;
+                const wrapper = document.getElementById('hero-3d-wrapper');
+                // Pastga skroll qilganda orqa fondagi MacBook biroz xiralashadi va chuqurlashadi
+                wrapper.style.opacity = Math.max(1 - progress * 0.72, 0.22);
+            }
+
+            // Asosiy 3D Animatsiya sikli
+            function animate3D() {
+                requestAnimationFrame(animate3D);
+
+                if (currentDeviceGroup) {
+                    // Yengil suzuvchi (floating) nafas olish animatsiyasi
+                    const t = Date.now() * 0.0012;
+                    const baseY = currentDeviceType === 'macbook' ? -0.15 : 0;
+                    currentDeviceGroup.position.y = baseY + Math.sin(t) * 0.05 + scrollOffsetY;
+                }
+
+                controls.update();
+                renderer.render(scene, camera);
+            }
+
+            // =========================================================================
+            // 3. SKROLL ANIMATSIYALARI (INTERSECTION OBSERVER)
+            // =========================================================================
+            function initScrollAnimations() {
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            entry.target.classList.add('active');
+                        }
+                    });
+                }, { threshold: 0.12 });
+
+                document.querySelectorAll('.reveal-up').forEach(el => observer.observe(el));
+            }
+
+            // =========================================================================
+            // 4. HAQIQIY TELEGRAM BOT INTEGRATSIYASI (BUYURTMA VA ARIZA YUBORISH)
+            // =========================================================================
+            const STORAGE_TOKEN_KEY = 'apple_studio_tg_token';
+            const STORAGE_CHAT_KEY = 'apple_studio_tg_chat_id';
+
+            function updateBotStatusBadge() {
+                const token = localStorage.getItem(STORAGE_TOKEN_KEY);
+                const chatId = localStorage.getItem(STORAGE_CHAT_KEY);
+                const badge = document.getElementById('bot-status-badge');
+
+                if (token && chatId) {
+                    badge.textContent = 'Faol (Ulangan)';
+                    badge.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-white text-black';
+                } else {
+                    badge.textContent = 'Demo Rejim';
+                    badge.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-white/10 text-apple-silver';
+                }
+            }
+
+            function openBotSettingsModal() {
+                document.getElementById('tg-bot-token').value = localStorage.getItem(STORAGE_TOKEN_KEY) || '';
+                document.getElementById('tg-chat-id').value = localStorage.getItem(STORAGE_CHAT_KEY) || '';
+                document.getElementById('bot-settings-feedback').classList.add('hidden');
+                const modal = document.getElementById('bot-settings-modal');
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            }
+
+            function closeBotSettingsModal() {
+                const modal = document.getElementById('bot-settings-modal');
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+
+            function saveBotSettings() {
+                const token = document.getElementById('tg-bot-token').value.trim();
+                const chatId = document.getElementById('tg-chat-id').value.trim();
+                const fb = document.getElementById('bot-settings-feedback');
+
+                localStorage.setItem(STORAGE_TOKEN_KEY, token);
+                localStorage.setItem(STORAGE_CHAT_KEY, chatId);
+                updateBotStatusBadge();
+
+                fb.textContent = 'Sozlamalar muvaffaqiyatli saqlandi! Endi barcha buyurtmalar ushbu Telegram botga yuboriladi.';
+                fb.className = 'text-xs p-3 rounded-xl bg-white/10 text-white border border-white/20 block';
+            }
+
+            async function sendTestTelegramMessage() {
+                const token = document.getElementById('tg-bot-token').value.trim();
+                const chatId = document.getElementById('tg-chat-id').value.trim();
+                const fb = document.getElementById('bot-settings-feedback');
+
+                if (!token || !chatId) {
+                    fb.textContent = 'Iltimos, avval Bot Token va Chat ID maydonlarini to‘ldiring.';
+                    fb.className = 'text-xs p-3 rounded-xl bg-white/5 text-apple-silver border border-white/15 block';
+                    return;
+                }
+
+                fb.textContent = 'Test xabari yuborilmoqda...';
+                fb.className = 'text-xs p-3 rounded-xl bg-white/5 text-white border border-white/15 block';
+
+                try {
+                    const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            chat_id: chatId,
+                            text: '✅ *Apple Studio Uzbekistan*\n\nTelegram bot integratsiyasi muvaffaqiyatli ulandi! Endi saytdan kelgan barcha buyurtmalar shu yerga yetkaziladi.',
+                            parse_mode: 'Markdown'
+                        })
+                    });
+                    const data = await response.json();
+                    if (data.ok) {
+                        saveBotSettings();
+                        fb.textContent = '✅ Muvaffaqiyatli! Telegram botingizni tekshiring.';
+                    } else {
+                        fb.textContent = `❌ Telegram API xatosi: ${data.description || 'Token yoki Chat ID noto‘g‘ri'}`;
+                    }
+                } catch (err) {
+                    fb.textContent = '❌ Tarmoq xatosi yuz berdi. Internet aloqasini tekshiring.';
+                }
+            }
+
+            // Asosiy Buyurtma Formasini Telegram Botga Yuborish
+            async function handleOrderSubmit(e) {
+                e.preventDefault();
+
+                const name = document.getElementById('customer-name').value.trim();
+                const phone = document.getElementById('customer-phone').value.trim();
+                const tgUser = document.getElementById('customer-telegram').value.trim() || 'Ko‘rsatilmagan';
+                const product = document.getElementById('order-product').value;
+                const color = document.getElementById('order-color').value;
+                const notes = document.getElementById('order-notes').value.trim() || 'Izoh yo‘q';
+
+                const btn = document.getElementById('submit-order-btn');
+                const feedback = document.getElementById('order-feedback');
+                const originalBtnHtml = btn.innerHTML;
+
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i><span>Telegram botga yuborilmoqda...</span>';
+
+                const messageText =
+                    ` *YANGI APPLE BUYURTMA / ARIZA*
+    ━━━━━━━━━━━━━━━━━━━━
+    👤 *Mijoz:* ${name}
+    📞 *Telefon:* ${phone}
+    ✈️ *Telegram:* ${tgUser}
+    📦 *Mahsulot:* ${product}
+    🎨 *Tanlangan rang:* ${color}
+    📝 *Izoh:* ${notes}
+    ━━━━━━━━━━━━━━━━━━━━
+    🕒 *Vaqt:* ${new Date().toLocaleString('uz-UZ')}`;
+
+                const token = localStorage.getItem(STORAGE_TOKEN_KEY);
+                const chatId = localStorage.getItem(STORAGE_CHAT_KEY);
+
+                try {
+                    if (token && chatId) {
+                        const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                chat_id: chatId,
+                                text: messageText,
+                                parse_mode: 'Markdown'
+                            })
+                        });
+                        const result = await response.json();
+
+                        if (result.ok) {
+                            feedback.className = 'mt-6 p-5 rounded-2xl bg-white/10 border border-white/25 text-xs text-white space-y-2 block';
+                            feedback.innerHTML = `
+                                <div class="font-bold text-sm flex items-center gap-2">
+                                    <i class="fa-solid fa-circle-check"></i>
+                                    <span>Arizangiz Telegram botga muvaffaqiyatli yuborildi!</span>
+                                </div>
+                                <p class="text-apple-silver">Hurmatli ${name}, buyurtmangiz qabul qilindi. Tez orada operatorlarimiz ${phone} raqami orqali bog'lanadi.</p>
+                            `;
+                            document.getElementById('apple-order-form').reset();
+                            setDeviceColor(currentColorHex, currentColorName);
+                        } else {
+                            throw new Error(result.description || 'Telegram API xatosi');
+                        }
+                    } else {
+                        // Bot token hali kiritilmagan bo'lsa, foydalanuvchiga tushunarli demo chek ko'rsatish
+                        await new Promise(r => setTimeout(r, 700));
+                        feedback.className = 'mt-6 p-5 rounded-2xl bg-white/5 border border-white/20 text-xs text-white space-y-3 block';
+                        feedback.innerHTML = `
+                            <div class="font-bold text-sm flex items-center justify-between">
+                                <span>✅ Ariza tayyorlandi (Telegram Bot Demo Rejim)</span>
+                                <button onclick="openBotSettingsModal()" class="underline text-apple-silver hover:text-white">Botni ulash</button>
+                            </div>
+                            <p class="text-apple-gray">Hozirda Telegram Bot Token kiritilmagan. Yuqoridagi <strong>"Bot Sozlamasi"</strong> tugmasi orqali o'z tokeningizni kiritsangiz, ushbu xabar to'g'ridan-to'g'ri Telegramingizga boradi:</p>
+                            <pre class="p-3 rounded-xl bg-black/70 border border-white/10 text-[11px] font-mono text-apple-silver whitespace-pre-wrap">${messageText}</pre>
+                        `;
+                    }
+                } catch (error) {
+                    feedback.className = 'mt-6 p-5 rounded-2xl bg-white/5 border border-white/20 text-xs text-apple-silver block';
+                    feedback.innerHTML = `<strong>Xatolik yuz berdi:</strong> ${error.message}. Iltimos, Bot Token va Chat ID to'g'ri kiritilganini tekshiring.`;
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = originalBtnHtml;
+                }
+            }
+
+            // =========================================================================
+            // 5. SAHIFA YUKLANGANDA BARCHA MODULLARNI ISHGA TUSHIRISH
+            // =========================================================================
+            window.onload = function () {
+                renderProductCards();
+                init3DScene();
+                animate3D();
+                initScrollAnimations();
+                updateBotStatusBadge();
+            };
+        </script>
+    </body>
+    
+    </html>
